@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎁 Geschenkgutschein Rätsel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Crimson+Pro:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #c9a962;
+            --gold-light: #e8d5a3;
+            --cream: #faf7f0;
+            --dark: #2c2c2c;
+            --sage: #9caf88;
+            --highlight: #fff3cd;
+            --correct: #d4edda;
+            --xmas-red: #c41e3a;
+            --xmas-green: #165b33;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Crimson Pro', Georgia, serif;
+            background: linear-gradient(135deg, var(--cream) 0%, #f5efe6 50%, #efe8dc 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 2rem; animation: fadeIn 1s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .gift-icon { font-size: 3rem; margin-bottom: 1rem; display: inline-block; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        h1 { font-family: 'Playfair Display', serif; font-size: 2.5rem; color: var(--dark); margin-bottom: 0.5rem; }
+        .subtitle { font-size: 1.2rem; color: var(--gold); letter-spacing: 0.1em; }
+        .instructions {
+            background: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06); border-left: 4px solid var(--gold);
+        }
+        .instructions p { color: var(--dark); line-height: 1.7; font-size: 1.1rem; }
+        .crossword-section { display: grid; grid-template-columns: auto 1fr; gap: 2rem; margin-bottom: 2rem; }
+        @media (max-width: 900px) { .crossword-section { grid-template-columns: 1fr; } }
+        .grid-container {
+            background: white; padding: 1.5rem; border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08); overflow-x: auto;
+        }
+        .crossword-grid { display: inline-grid; gap: 2px; background: #bbb; padding: 2px; border-radius: 4px; }
+        .cell {
+            width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 600;
+            position: relative; background: white; transition: all 0.3s ease;
+        }
+        .cell.empty { background: var(--dark); }
+        .cell input {
+            width: 100%; height: 100%; border: none; background: transparent; text-align: center;
+            font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 600;
+            text-transform: uppercase; color: var(--dark); outline: none; padding-top: 8px;
+        }
+        .cell input:focus { background: var(--highlight); }
+        .cell.correct input { background: var(--correct); }
+        .cell.solution-letter { background: linear-gradient(135deg, var(--gold-light), var(--gold)); }
+        .cell.solution-letter.correct input { background: linear-gradient(135deg, #c5e1a5, var(--sage)); }
+        .cell-number { position: absolute; top: 2px; left: 3px; font-size: 0.6rem; color: #555; }
+        .clues-container { background: white; padding: 1.5rem 2rem; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+        .clues-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        @media (max-width: 600px) { .clues-wrapper { grid-template-columns: 1fr; } }
+        .clues-container h3 { font-family: 'Playfair Display', serif; font-size: 1rem; color: var(--dark); margin-bottom: 0.5rem; border-bottom: 2px solid var(--gold-light); padding-bottom: 0.3rem; }
+        .clue-list { list-style: none; }
+        .clue-list li { padding: 0.5rem 0; border-bottom: 1px solid #eee; display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.9rem; }
+        .clue-list li:last-child { border-bottom: none; }
+        .clue-number { background: var(--gold); color: white; min-width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; }
+        .clue-list li.solved .clue-number { background: var(--sage); }
+        .clue-list li.solved .clue-text { text-decoration: line-through; color: #999; }
+        
+        .check-btn {
+            display: block; margin: 2rem auto 0; padding: 1.2rem 3rem;
+            background: linear-gradient(135deg, var(--xmas-red), #a01830); color: white; border: none;
+            border-radius: 50px; font-family: 'Playfair Display', serif; font-size: 1.2rem;
+            cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(196, 30, 58, 0.3);
+        }
+        .check-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(196, 30, 58, 0.4); }
+        .hint-text { text-align: center; margin-top: 1rem; color: #999; font-size: 0.9rem; font-style: italic; }
+        
+        .xmas-reveal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #0c1445 0%, #1a237e 50%, #0d1137 100%);
+            z-index: 999; justify-content: center; align-items: center; flex-direction: column;
+            overflow: hidden;
+        }
+        .xmas-reveal.active { display: flex; }
+        
+        .stars { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .star {
+            position: absolute; width: 3px; height: 3px; background: white;
+            border-radius: 50%; animation: twinkle 2s infinite;
+        }
+        @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+        
+        .snowflake {
+            position: absolute; color: white; font-size: 1.5rem; opacity: 0.8;
+            animation: fall linear infinite; pointer-events: none;
+        }
+        @keyframes fall { 0% { transform: translateY(-100px) rotate(0deg); } 100% { transform: translateY(100vh) rotate(360deg); } }
+        
+        .reveal-content { position: relative; z-index: 10; text-align: center; padding: 2rem; }
+        
+        .xmas-tree { font-size: 5rem; margin-bottom: 1rem; animation: glow 2s ease-in-out infinite; }
+        @keyframes glow { 0%, 100% { filter: drop-shadow(0 0 10px #ffd700); } 50% { filter: drop-shadow(0 0 30px #ffd700); } }
+        
+        .main-title {
+            font-family: 'Playfair Display', serif; font-size: 4rem; color: var(--gold);
+            text-shadow: 0 4px 30px rgba(201, 169, 98, 0.5); margin-bottom: 0.5rem;
+            opacity: 0; transform: scale(0.5);
+        }
+        .main-title.visible { opacity: 1; transform: scale(1); transition: all 1s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        
+        .year-text {
+            font-family: 'Playfair Display', serif; font-size: 6rem; color: white;
+            text-shadow: 0 0 40px rgba(255,255,255,0.5); margin-bottom: 2rem;
+            opacity: 0; transform: translateY(30px);
+        }
+        .year-text.visible { opacity: 1; transform: translateY(0); transition: all 1s ease-out 0.5s; }
+        
+        .words-solved {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;
+            max-width: 600px; margin: 0 auto 2rem; opacity: 0;
+        }
+        .words-solved.visible { opacity: 1; transition: all 0.8s ease-out 1s; }
+        
+        .word-badge {
+            background: linear-gradient(135deg, var(--xmas-green), #0d3d1f); color: white;
+            padding: 0.6rem 1.2rem; border-radius: 25px; font-family: 'Playfair Display', serif;
+            font-size: 1rem; box-shadow: 0 4px 15px rgba(22, 91, 51, 0.4); border: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .final-message {
+            font-family: 'Crimson Pro', serif; font-size: 1.5rem; color: white;
+            line-height: 1.8; opacity: 0; max-width: 500px;
+        }
+        .final-message.visible { opacity: 1; transition: all 0.8s ease-out 1.5s; }
+        
+        .close-reveal {
+            position: absolute; top: 20px; right: 20px; background: transparent;
+            border: 2px solid var(--gold); color: var(--gold); padding: 0.7rem 1.3rem;
+            border-radius: 50px; font-family: 'Playfair Display', serif; cursor: pointer; z-index: 20;
+        }
+        .close-reveal:hover { background: var(--gold); color: white; }
+        
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="gift-icon">🎁</div>
+            <h1>Ein Rätsel für Dich</h1>
+            <p class="subtitle">✨ Löse es und entdecke dein Geschenk ✨</p>
+        </header>
+
+        <div class="instructions">
+            <p>Fülle das Kreuzworträtsel aus! Die <strong style="color: var(--gold);">goldenen Felder</strong> ergeben das Lösungswort! 💆‍♀️</p>
+        </div>
+
+        <div class="crossword-section">
+            <div class="grid-container">
+                <div class="crossword-grid" id="grid"></div>
+            </div>
+            <div class="clues-container">
+                <div class="clues-wrapper">
+                    <div>
+                        <h3>⬇️ Senkrecht</h3>
+                        <ul class="clue-list" id="clues-down"></ul>
+                    </div>
+                    <div>
+                        <h3>➡️ Waagerecht</h3>
+                        <ul class="clue-list" id="clues-across"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="check-btn" onclick="checkSolution()">🎄 Geschenk enthüllen 🎄</button>
+        <p class="hint-text">Löse alle Wörter und klicke dann auf den Button!</p>
+    </div>
+
+    <div class="xmas-reveal" id="xmasReveal">
+        <button class="close-reveal" onclick="closeReveal()">✕ Schließen</button>
+        <div class="stars" id="stars"></div>
+        <div class="reveal-content">
+            <div class="xmas-tree">🎄</div>
+            <div class="main-title" id="mainTitle">Anita-Tag</div>
+            <div class="year-text" id="yearText">2026</div>
+            <div class="words-solved" id="wordsSolved"></div>
+            <p class="final-message" id="finalMessage">
+                Ein ganzer Tag nur für dich –<br>
+                mit Wellness, Verwöhnung und<br>
+                allem was dein Herz begehrt! 💝<br><br>
+                <em>Frohe Weihnachten!</em> 🎁
+            </p>
+        </div>
+    </div>
+
+    <script>
+        /*
+         * KREUZWORTRÄTSEL LAYOUT - FINAL
+         * ==============================
+         * 
+         * THERME = T-H-E-R-M-E (6 Buchstaben), senkrecht Spalte 6, Zeile 0-5
+         * MASSAGE = M-A-S-S-A-G-E (7 Buchstaben), waagrecht Zeile 2, Spalte 0-6
+         * -> Kreuzung bei [6,2]: THERME[2]=E, MASSAGE[6]=E ✓
+         * 
+         * BRUNCH = B-R-U-N-C-H (6 Buchstaben), waagrecht Zeile 3, Spalte 5-10
+         * -> Kreuzung bei [6,3]: THERME[3]=R, BRUNCH[1]=R ✓
+         * 
+         * FILMABEND = F-I-L-M-A-B-E-N-D (9 Buchstaben), waagrecht Zeile 5, Spalte 0-8
+         * -> Kreuzung bei [6,5]: THERME[5]=E, FILMABEND[6]=E ✓
+         * 
+         * DETOX = D-E-T-O-X (5 Buchstaben), senkrecht Spalte 8, Zeile 5-9
+         * -> Kreuzung bei [8,5]: FILMABEND[8]=D, DETOX[0]=D ✓
+         * 
+         * FOODBABY = F-O-O-D-B-A-B-Y (8 Buchstaben), waagrecht Zeile 8, Spalte 5-12
+         * -> Kreuzung bei [8,8]: DETOX[3]=O, FOODBABY[3]=D? NEIN!
+         * FOODBABY = F[5,8] O[6,8] O[7,8] D[8,8] B[9,8] A[10,8] B[11,8] Y[12,8]
+         * DETOX = D[8,5] E[8,6] T[8,7] O[8,8] X[8,9]
+         * -> Kreuzung bei [8,8]: DETOX[3]=O, FOODBABY[3]=D ❌
+         * 
+         * Lösung: FOODBABY verschieben, sodass O bei Spalte 8 ist
+         * FOODBABY[1]=O oder [2]=O
+         * Wenn FOODBABY bei Spalte 7 startet: F[7,8] O[8,8] O[9,8] D[10,8] B[11,8] A[12,8] B[13,8] Y[14,8]
+         * -> Kreuzung bei [8,8]: DETOX[3]=O, FOODBABY[1]=O ✓
+         * 
+         * BEAUTY = B-E-A-U-T-Y (6 Buchstaben), senkrecht
+         * -> Kreuzung mit FOODBABY beim B: FOODBABY[4]=B bei [11,8]
+         * BEAUTY startet bei [11,8]: B[11,8] E[11,9] A[11,10] U[11,11] T[11,12] Y[11,13]
+         * 
+         *        0  1  2  3  4  5  6  7  8  9 10 11 12 13 14
+         *    0                     T
+         *    1                     H
+         *    2   M  A  S  S  A  G  E                         <- MASSAGE + THERME bei E
+         *    3               B  R  U  N  C  H                <- BRUNCH + THERME bei R (Spalte 6 = U? NEIN!)
+         * 
+         * PROBLEM: BRUNCH[1]=R muss bei Spalte 6 sein
+         * Wenn BRUNCH bei Spalte 5 startet: B[5,3] R[6,3] U[7,3] N[8,3] C[9,3] H[10,3]
+         * THERME[3]=R bei [6,3] ✓
+         * 
+         *        0  1  2  3  4  5  6  7  8  9 10 11 12 13 14
+         *    0                     T
+         *    1                     H
+         *    2   M  A  S  S  A  G  E                         
+         *    3               B  R  U  N  C  H                
+         *    4                     M
+         *    5   F  I  L  M  A  B  E  N  D                   <- FILMABEND + THERME bei E
+         *    6                           E
+         *    7                           T
+         *    8                     F  O  O  D  B  A  B  Y    <- FOODBABY + DETOX bei O
+         *    9                           X     E
+         *   10                                 A
+         *   11                                 U
+         *   12                                 T
+         *   13                                 Y
+         */
+
+        const COLS = 15;
+        const ROWS = 14;
+        
+        let grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+        
+        const wordsFinal = [
+            // MASSAGE: Zeile 2, Spalte 0-6
+            { word: 'MASSAGE', dir: 'across', row: 2, col: 0, num: 1, 
+              clue: 'Thai, Hot Stone oder Schwedisch – die Kunst, Knoten zu lösen (7)' },
+            
+            // THERME: Spalte 6, Zeile 0-5
+            { word: 'THERME', dir: 'down', row: 0, col: 6, num: 2, 
+              clue: 'Römer liebten es, Isländer haben\'s natürlich, Baden-Baden verlangt viel dafür (6)' },
+            
+            // BRUNCH: Zeile 3, Spalte 5-10
+            { word: 'BRUNCH', dir: 'across', row: 3, col: 5, num: 7, 
+              clue: 'Sonntags-Ritual: Frühstück + Mittagessen (6)' },
+            
+            // FILMABEND: Zeile 5, Spalte 0-8
+            { word: 'FILMABEND', dir: 'across', row: 5, col: 0, num: 3, 
+              clue: 'Couch-Potato-Modus: Decke, Snacks und die Frage "Schaust du noch?" (9)' },
+            
+            // DETOX: Spalte 8, Zeile 5-9
+            { word: 'DETOX', dir: 'down', row: 5, col: 8, num: 6, 
+              clue: 'Bildschirm aus, Gedanken frei – digitale Auszeit (5)' },
+            
+            // FOODBABY: Zeile 8, Spalte 7-14
+            { word: 'FOODBABY', dir: 'across', row: 8, col: 7, num: 5, 
+              clue: 'Nach dem All-you-can-eat: der kugelrunde Bauch (8)' },
+            
+            // BEAUTY: Spalte 11, Zeile 8-13
+            { word: 'BEAUTY', dir: 'down', row: 8, col: 11, num: 4, 
+              clue: 'Sleeping ___ : So heißt Dornröschen im englischen Original (6)' },
+        ];
+        
+        // Grid befüllen
+        wordsFinal.forEach(w => {
+            let { word, dir, row, col } = w;
+            word.split('').forEach((letter, i) => {
+                const r = dir === 'across' ? row : row + i;
+                const c = dir === 'across' ? col + i : col;
+                
+                if (!grid[r]) return;
+                
+                if (grid[r][c]) {
+                    if (grid[r][c].letter !== letter) {
+                        console.error(`❌ Fehler bei [${c},${r}]: ${grid[r][c].letter} vs ${letter} (${word})`);
+                    }
+                } else {
+                    grid[r][c] = { letter, num: null, solution: false };
+                }
+                
+                if (i === 0) {
+                    grid[r][c].num = w.num;
+                }
+            });
+        });
+        
+        // ANITA-TAG Lösungsbuchstaben
+        const solutionMap = [
+            { letter: 'A', col: 1, row: 2 },     // MASSAGE[1]
+            { letter: 'N', col: 7, row: 5 },     // FILMABEND[7]
+            { letter: 'I', col: 1, row: 5 },     // FILMABEND[1]
+            { letter: 'T', col: 6, row: 0 },     // THERME[0]
+            { letter: 'A', col: 12, row: 8 },    // FOODBABY[5]
+            null, // -
+            { letter: 'T', col: 11, row: 12 },   // BEAUTY[4]
+            { letter: 'A', col: 4, row: 2 },     // MASSAGE[4]
+            { letter: 'G', col: 5, row: 2 },     // MASSAGE[5]
+        ];
+        
+        // Markiere Lösungsbuchstaben
+        solutionMap.forEach(s => {
+            if (s && grid[s.row] && grid[s.row][s.col]) {
+                grid[s.row][s.col].solution = true;
+            }
+        });
+        
+        // Grid-Größe
+        let maxC = 0, maxR = 0;
+        grid.forEach((row, r) => row.forEach((cell, c) => {
+            if (cell) { maxC = Math.max(maxC, c); maxR = Math.max(maxR, r); }
+        }));
+        const gridCols = maxC + 1;
+        const gridRows = maxR + 1;
+        
+        function createGrid() {
+            const el = document.getElementById('grid');
+            el.style.gridTemplateColumns = `repeat(${gridCols}, 40px)`;
+            el.innerHTML = '';
+            
+            for (let r = 0; r < gridRows; r++) {
+                for (let c = 0; c < gridCols; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    const data = grid[r] ? grid[r][c] : null;
+                    
+                    if (!data) {
+                        cell.classList.add('empty');
+                    } else {
+                        if (data.solution) cell.classList.add('solution-letter');
+                        if (data.num) {
+                            const num = document.createElement('span');
+                            num.className = 'cell-number';
+                            num.textContent = data.num;
+                            cell.appendChild(num);
+                        }
+                        const input = document.createElement('input');
+                        input.maxLength = 1;
+                        input.dataset.row = r;
+                        input.dataset.col = c;
+                        input.dataset.correct = data.letter;
+                        input.addEventListener('input', onInput);
+                        input.addEventListener('keydown', onKeydown);
+                        cell.appendChild(input);
+                    }
+                    el.appendChild(cell);
+                }
+            }
+        }
+        
+        function createClues() {
+            const down = document.getElementById('clues-down');
+            const across = document.getElementById('clues-across');
+            
+            wordsFinal.sort((a, b) => a.num - b.num).forEach(w => {
+                const li = document.createElement('li');
+                li.dataset.word = w.word;
+                li.innerHTML = `<span class="clue-number">${w.num}</span><span class="clue-text">${w.clue}</span>`;
+                (w.dir === 'down' ? down : across).appendChild(li);
+            });
+        }
+        
+        let direction = 'across';
+        
+        function onInput(e) {
+            const inp = e.target;
+            inp.value = inp.value.toUpperCase().replace(/[^A-Z]/g, '');
+            inp.parentElement.classList.toggle('correct', inp.value === inp.dataset.correct);
+            checkWords();
+            if (inp.value) moveNext(inp);
+        }
+        
+        function onKeydown(e) {
+            const inp = e.target;
+            const r = +inp.dataset.row, c = +inp.dataset.col;
+            if (e.key === 'Backspace' && !inp.value) { e.preventDefault(); movePrev(inp); }
+            if (e.key === 'ArrowRight') { direction = 'across'; move(r, c, 0, 1); }
+            if (e.key === 'ArrowLeft') { direction = 'across'; move(r, c, 0, -1); }
+            if (e.key === 'ArrowDown') { direction = 'down'; move(r, c, 1, 0); }
+            if (e.key === 'ArrowUp') { direction = 'down'; move(r, c, -1, 0); }
+        }
+        
+        function move(r, c, dr, dc) {
+            const inp = document.querySelector(`input[data-row="${r+dr}"][data-col="${c+dc}"]`);
+            if (inp) inp.focus();
+        }
+        
+        function moveNext(inp) {
+            const r = +inp.dataset.row, c = +inp.dataset.col;
+            move(r, c, direction === 'down' ? 1 : 0, direction === 'across' ? 1 : 0);
+        }
+        
+        function movePrev(inp) {
+            const r = +inp.dataset.row, c = +inp.dataset.col;
+            move(r, c, direction === 'down' ? -1 : 0, direction === 'across' ? -1 : 0);
+        }
+        
+        function checkWords() {
+            wordsFinal.forEach(w => {
+                let { word, dir, row, col } = w;
+                let ok = true;
+                word.split('').forEach((letter, i) => {
+                    const r = dir === 'across' ? row : row + i;
+                    const c = dir === 'across' ? col + i : col;
+                    const inp = document.querySelector(`input[data-row="${r}"][data-col="${c}"]`);
+                    if (!inp || inp.value !== letter) ok = false;
+                });
+                const li = document.querySelector(`li[data-word="${word}"]`);
+                if (li) li.classList.toggle('solved', ok);
+            });
+        }
+        
+        function checkSolution() {
+            const inputs = document.querySelectorAll('.cell:not(.empty) input');
+            let allOk = true;
+            
+            inputs.forEach(inp => {
+                if (inp.value !== inp.dataset.correct) {
+                    allOk = false;
+                    inp.parentElement.style.animation = 'shake 0.3s';
+                    setTimeout(() => inp.parentElement.style.animation = '', 300);
+                }
+            });
+            
+            if (allOk) showXmasReveal();
+        }
+        
+        function showXmasReveal() {
+            const reveal = document.getElementById('xmasReveal');
+            reveal.classList.add('active');
+            
+            const starsContainer = document.getElementById('stars');
+            starsContainer.innerHTML = '';
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 2 + 's';
+                starsContainer.appendChild(star);
+            }
+            
+            for (let i = 0; i < 30; i++) {
+                const flake = document.createElement('div');
+                flake.className = 'snowflake';
+                flake.textContent = '❄';
+                flake.style.left = Math.random() * 100 + '%';
+                flake.style.fontSize = (Math.random() * 1.5 + 0.8) + 'rem';
+                flake.style.animationDuration = (Math.random() * 5 + 5) + 's';
+                flake.style.animationDelay = Math.random() * 5 + 's';
+                reveal.appendChild(flake);
+            }
+            
+            const wordsSolved = document.getElementById('wordsSolved');
+            wordsSolved.innerHTML = '';
+            ['THERME', 'MASSAGE', 'FILMABEND', 'BEAUTY', 'FOODBABY', 'DETOX', 'BRUNCH'].forEach(word => {
+                const badge = document.createElement('span');
+                badge.className = 'word-badge';
+                badge.textContent = word;
+                wordsSolved.appendChild(badge);
+            });
+            
+            setTimeout(() => document.getElementById('mainTitle').classList.add('visible'), 500);
+            setTimeout(() => document.getElementById('yearText').classList.add('visible'), 1000);
+            setTimeout(() => document.getElementById('wordsSolved').classList.add('visible'), 1500);
+            setTimeout(() => document.getElementById('finalMessage').classList.add('visible'), 2000);
+        }
+        
+        function closeReveal() {
+            const reveal = document.getElementById('xmasReveal');
+            reveal.classList.remove('active');
+            document.getElementById('mainTitle').classList.remove('visible');
+            document.getElementById('yearText').classList.remove('visible');
+            document.getElementById('wordsSolved').classList.remove('visible');
+            document.getElementById('finalMessage').classList.remove('visible');
+            document.querySelectorAll('.snowflake').forEach(el => el.remove());
+        }
+        
+        createGrid();
+        createClues();
+    </script>
+</body>
+</html>
